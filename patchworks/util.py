@@ -11,8 +11,8 @@ def int_from_bytes(bytestring, endian='little'):
     offsets = range(0, len(bytestring))
     if endian == 'big':
         offsets = reversed(offsets)
-    for offset, i in zip(offsets, bytestring):
-        accumulator |= ord(i) << (offset * 8)
+    for offset, i in zip(offsets, bytearray(bytestring)):
+        accumulator |= i << (offset * 8)
     return accumulator
 
 

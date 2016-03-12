@@ -1,3 +1,5 @@
+import binascii
+
 from datetime import datetime
 
 from . import PatchFile
@@ -19,13 +21,7 @@ class Ninja2(PatchFile):
         b'\x09': 'LYNX',
     }
 
-    def __init__(self, file):
-        self._file = file
-        self.records = []
-        self.metadata = {}
-
     def is_patch(self):
-        self._file.seek(0)
         header = self.read(6)
         return header == b'NINJA2'
 
@@ -42,26 +38,22 @@ class Ninja2(PatchFile):
             ("description", 1074),
         ]
 
-        for field, size in field_spec:
-            field_data = self.read(size)
+        for field, field_size in field_spec:
+            field_data = self.read(field_size)
             self.metadata[field] = util.zero_padded_bytes_to_string(field_data)
 
         self.format_description()
         self.format_date()
 
-    def parse_eof(self):
-        self._file.close()
-
     def parse_records(self):
-        command = self.read(1)
-        while command != b'\x00':
-            if command == b'\x01':
+        PARSE_FILE = b'\x01'
+        PARSE_RECORD = b'\x02'
+
+        for command in iter(lambda: self.read(1), b'\x00'):
+            if command == PARSE_FILE:
                 self.parse_file()
-            elif command == b'\x02':
+            elif command == PARSE_RECORD:
                 self.parse_record()
-            else:
-                raise Exception('Unknown command')
-        self.parse_eof()
 
     def parse_record(self):
         offset = self.parse_int()
@@ -76,19 +68,21 @@ class Ninja2(PatchFile):
         self.metadata['modified'] = {}
         self.metadata['source']['size'] = self.parse_int()
         self.metadata['modified']['size'] = self.parse_int()
-        self.metadata['source']['md5'] = self.read(16)
-        self.metadata['modified']['md5'] = self.read(16)
+        self.metadata['source']['md5'] = self.parse_md5()
+        self.metadata['modified']['md5'] = self.parse_md5()
+
+    def parse_md5(self):
+        return binascii.hexlify(self.read(16)).decode()
 
     def parse_filename(self):
         filename_size = self.parse_int()
         return self.read(filename_size) if filename_size else None
 
     def parse_int(self):
-        return util.int_from_bytes(self.read(ord(self.read(1))))
+        return util.int_from_bytes(self.read(util.int_from_bytes(self.read(1))))
 
     def format_description(self):
-        info = self.metadata['description']
-        self.metadata['description'] = info.replace('\\n', '\n')
+        self.metadata['description'] = self.metadata['description'].replace('\\n', '\n')
 
     def format_date(self):
         date = self.metadata['date']
