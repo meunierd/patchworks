@@ -1,5 +1,6 @@
 import binascii
 import hashlib
+import zlib
 
 
 def zero_padded_bytes_to_string(bytestring):
@@ -21,6 +22,13 @@ def md5_sum(fp):
     for chunk in iter(lambda: fp.read(4096), b''):
         m.update(chunk)
     return m.hexdigest()
+
+
+def crc32_sum(fp):
+    crc = zlib.crc32(b'')
+    for chunk in iter(lambda: fp.read(4096), b''):
+        crc = zlib.crc32(chunk, crc)
+    return "%08x" % crc
 
 
 def bytes_from_str(string):

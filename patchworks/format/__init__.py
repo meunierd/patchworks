@@ -2,7 +2,6 @@ class PatchFile:
 
     def __init__(self, file):
         self._file = file
-        self.records = []
         self.metadata = {}
 
     @classmethod
@@ -10,7 +9,8 @@ class PatchFile:
         return cls(open(filename, 'rb'))
 
     def is_patch(self):
-        return NotImplemented
+        magic = self.read(len(self.MAGIC))
+        return magic == self.MAGIC
 
     def parse_metadata(self):
         return NotImplemented

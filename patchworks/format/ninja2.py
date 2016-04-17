@@ -2,13 +2,14 @@ import binascii
 
 from datetime import datetime
 
-from . import PatchFile
+from .base import Parser, Record
 from .. import util
 
 
-class Ninja2(PatchFile):
+class Ninja2Parser(Parser):
 
     EXTENSION = 'rup'
+    MAGIC = b'NINJA2'
     DATA_TYPE = {
         b'\x00': 'raw',
         b'\x01': 'NES',
@@ -20,10 +21,6 @@ class Ninja2(PatchFile):
         b'\x08': 'PCE',
         b'\x09': 'LYNX',
     }
-
-    def is_patch(self):
-        header = self.read(6)
-        return header == b'NINJA2'
 
     def parse_metadata(self):
         field_spec = [
@@ -59,7 +56,7 @@ class Ninja2(PatchFile):
         offset = self.parse_int()
         data_size = self.parse_int()
         data = self.read(data_size)
-        self.records.append((offset, data))
+        return Ninja2Record(offset, data)
 
     def parse_file_metadata(self):
         self.parse_filename()  # TODO: multi-file patch support
@@ -88,3 +85,16 @@ class Ninja2(PatchFile):
         date = self.metadata['date']
         if date:
             self.metadata['date'] = datetime.strptime(date, "%Y%m%d").date()
+
+
+class Ninja2Record(Record):
+
+    def __init__(self, offset, data):
+        self.offset = offset
+        self.data = data
+
+    def apply(self, fp):
+        fp.seek(self.offset)
+        source_data = fp.read(len(self.data))
+        fp.seek(self.offset)
+        fp.write(source_data ^ self.data)
