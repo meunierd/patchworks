@@ -1,5 +1,6 @@
 import binascii
 import hashlib
+import os
 import zlib
 
 
@@ -34,3 +35,15 @@ def crc32_sum(fp):
 def bytes_from_str(string):
     leading_zero = "0" * (len(string) % 2)
     return binascii.unhexlify(leading_zero + string)
+
+
+def expand_file(fp, size):
+    fp.seek(size - 1)
+    fp.write(b'\x00')
+
+
+def sizeof_file(fp):
+    fp.seek(0, os.SEEK_END)
+    file_size = fp.tell()
+    fp.seek(0)
+    return file_size

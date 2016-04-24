@@ -1,5 +1,4 @@
 import binascii
-import os
 
 
 from .base import Parser, Record, Applicator
@@ -10,13 +9,6 @@ class UPSParser(Parser):
 
     EXTENSION = 'ups'
     MAGIC = b'UPS1'
-
-    def __init__(self, _file):
-        super().__init__(_file)
-
-        self._file.seek(0, os.SEEK_END)
-        self.patch_size = self._file.tell()
-        self._file.seek(0)
 
     def parse_file_sizes(self):
         self.source_size = self.parse_int()

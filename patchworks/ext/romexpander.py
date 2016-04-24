@@ -4,58 +4,71 @@ Expand NES ROMs.
 See: http://dvdtranslations.eludevisibility.org/rom_expander_pro.html
 """
 
+import binascii
+
 from .. import util
 
 
-class ROMExpander:
+class ROMExpanderParser(object):
 
     FILENAME = "ROM Expander Pro.txt"
 
-    def tokenize_line(self, line):
-        """Tokenize a tab-delineated string and return as a list."""
+    def __init__(self, fp):
+        self.lines = fp.readlines()
+
+    def parse_metadata(self):
+        self.parse_name()
+        self.parse_file_metadata()
+
+    def parse_header(self):
+        line = self.readline()
+        assert line.pop(0) == 'HEADER'
+        self.header_size = self.parse_int(line.pop(0))
+        self.header_data = self.parse_bytes(line)
+
+    def parse_file_sizes_and_checksum(self):
+        line = self.readline()
+        assert line.pop(0) == 'SIZE'
+        self.source_size = self.parse_int(line.pop(0))
+        self.modified_size = self.parse_int(line.pop(0))
+        if line:
+            self.source_checksum = line.pop(0).lower()
+
+    def parse_filenames(self):
+        line = self.readline()
+        assert line.pop(0) == 'NAME'
+        self.source_name, self.modified_name = line
+
+    def parse_bytes(self, byte_list):
+        return self._unhexlify("".join(map(self._leftpad, byte_list)))
+
+    def parse_int(self, hex_string):
+        return util.int_from_bytes(self._unhexlify(hex_string), endian='big')
+
+    def readline(self):
+        return self._tokenize(self.lines.pop(0))
+
+    def _leftpad(self, value):
+        return "0" * (len(value) % 2) + value
+
+    def _tokenize(self, line):
         return line.strip().split('\t')
 
-    def load_script(self, txt=None):
-        script = {}
-        script["file"] = txt
-        with open(script["file"]) as script_file:
-            script_lines = script_file.readlines()
+    def _unhexlify(self, hex_string):
+        return binascii.unhexlify(self._leftpad(hex_string))
 
-        # Load the `NAME` line from script.
-        l = self.tokenize_line(script_lines.pop(0))
-        assert 'NAME' == l.pop(0)
-        script["source"], script["target"] = l
-        assert script["target"] != script["source"]
+    # def load_script(self, txt=None):
+    #     script["ops"] = []
+    #     while script_lines:
+    #         script["ops"].append(self._tokenize(script_lines.pop(0)))
 
-        # Load the `SIZE` and optional `MD5`
-        l = self.tokenize_line(script_lines.pop(0))
-        script["old_size"] = eval("0x" + l[1])
-        script["new_size"] = eval("0x" + l[2])
-        if l.index(l[-1]) > 2:
-            script["MD5"] = l[3].lower()
+    #     script["patches"] = []
+    #     for op in script["ops"]:
+    #         if op[0] == "REPLACE":
+    #             script["patches"].append(op[1:])
+    #             script["ops"].remove(op)
 
-        # Load the replacement `HEADER`.
-        l = self.tokenize_line(script_lines.pop(0))
-        assert 'HEADER' == l.pop(0)
-        script["header_size"] = eval("0x" + l.pop(0))
-        assert script["header_size"] > len(l)
-        # Sanitize and concatenate the header data.
-        new_header = "".join(["0" * (2 - len(x)) + x for x in l])
-        # Cast to character data and pad with 0x00 to header_size
-        new_header = util.bytes_from_str(new_header)
-        script["header"] = new_header + "\x00" * (script["header_size"] - len(l))
-
-        script["ops"] = []
-        while script_lines:
-            script["ops"].append(self.tokenize_line(script_lines.pop(0)))
-
-        script["patches"] = []
-        for op in script["ops"]:
-            if op[0] == "REPLACE":
-                script["patches"].append(op[1:])
-                script["ops"].remove(op)
-
-        return script
+    #     return script
 
     def expand_rom(script):
         if "MD5" in script:
@@ -63,9 +76,9 @@ class ROMExpander:
                 # Don't digest the header.
                 s_file.read(script["header_size"])
                 assert script["MD5"] == util.md5_sum(s_file)
-                print "MD5... match!"
+                print("MD5... match!")
 
-        print "Expanding..."
+        print("Expanding...")
         with open(script["source"], "rb") as s, open(script["target"], "wb") as t:
             def copy(s_offset, t_offset):
                 source_ptr = script["header_size"] + s_offset
@@ -106,3 +119,23 @@ class ROMExpander:
                 data = "".join(["0" * (2 - len(x)) + x for x in patch])
                 t.seek(offset + script['header_size'])
                 t.write(util.bytes_from_str(data))
+
+
+class ROMExpanderRecord(object):
+
+    pass
+
+
+class CopyRecord(ROMExpanderRecord):
+
+    pass
+
+
+class FillRecord(ROMExpanderRecord):
+
+    pass
+
+
+class ReplaceRecord(ROMExpanderRecord):
+
+    pass
