@@ -17,3 +17,6 @@ class PatchFile:
 
     def read(self, size):
         return self._file.read(size)
+
+    def apply(self, source_file, modified_file):
+        pass
