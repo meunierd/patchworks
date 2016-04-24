@@ -1,10 +1,10 @@
 import codecs
 import json
 
-from .ips import IPS
+from .ips import IPSParser
 
 
-class EBPatcher(IPS):
+class EBPatcher(IPSParser):
 
     EXTENSION = 'ebp'
 

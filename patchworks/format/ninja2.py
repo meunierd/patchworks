@@ -2,7 +2,7 @@ import binascii
 
 from datetime import datetime
 
-from .base import Parser, Record
+from .base import Parser, Record, Applicator
 from .. import util
 
 
@@ -98,3 +98,8 @@ class Ninja2Record(Record):
         source_data = fp.read(len(self.data))
         fp.seek(self.offset)
         fp.write(source_data ^ self.data)
+
+
+class Ninja2Applicator(Applicator):
+
+    Parser = Ninja2Parser

@@ -1,18 +1,15 @@
-from . import PatchFile
+from .base import Parser
 from .. import util
 
 
-class IPS(PatchFile):
+class IPSParser(Parser):
 
     EXTENSION = 'ips'
+    MAGIC = b'PATCH'
 
     def __init__(self, file, romexpander=None):
         super().__init__(file)
         self.romexpander = romexpander
-
-    def is_patch(self):
-        header = self.read(5)
-        return header == b'PATCH'
 
     def parse_int(self, size):
         return util.int_from_bytes(self.read(size), 'big')
@@ -28,8 +25,19 @@ class IPS(PatchFile):
                 data = self.read(1) * rle_size
             else:
                 data = self.read(data_size)
-            yield (offset, data)
+            yield IPSRecord(offset, data)
 
     def cut(self):
         """LunarIPS truncation extension"""
         pass
+
+
+class IPSRecord(object):
+
+    def __init__(self, offset, data):
+        self.offset = offset
+        self.data = data
+
+    def apply(self, fp):
+        fp.seek(self.offset)
+        fp.write(self.data)

@@ -1,7 +1,7 @@
 import binascii
 
 
-from .base import Parser, Record, Applicator
+from .base import Parser, Record, Applicator, AdjustsFilesize
 from .. import util
 
 
@@ -9,6 +9,11 @@ class UPSParser(Parser):
 
     EXTENSION = 'ups'
     MAGIC = b'UPS1'
+
+    def __init__(self, _file):
+        super().__init__(_file)
+
+        self.patch_size = util.sizeof_file(self._file)
 
     def parse_file_sizes(self):
         self.source_size = self.parse_int()
@@ -59,6 +64,22 @@ class UPSRecord(Record):
         self.data = data
 
 
-class UPSApplicator(Applicator):
+class UPSApplicator(Applicator, AdjustsFilesize):
 
-    pass
+    def apply(self):
+        # check crc32 of input
+        # copy source to modified
+        # expand/truncate if necessary
+        # apply records
+        # check crc32 of output
+        pass
+
+    def validate_source(self):
+        # raise WrongSource
+        pass
+
+    def validate_modified(self):
+        pass
+
+    def load_patch(self):
+        self.patch = UPSParser(self.patch_fp)
