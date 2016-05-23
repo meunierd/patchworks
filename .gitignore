@@ -1,3 +1,5 @@
 .coverage
 *.pyc
 .venv
+*.egg-info
+*.cache

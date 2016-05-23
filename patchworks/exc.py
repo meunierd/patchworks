@@ -2,9 +2,9 @@ class ValidationError(Exception):
     pass
 
 
-class InvalidSourceError(Exception):
+class InvalidSourceError(ValidationError):
     pass
 
 
-class InvalidModifiedError(Exception):
+class InvalidModifiedError(ValidationError):
     pass

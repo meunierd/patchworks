@@ -1,5 +1,5 @@
-from .ups import UPS
+from patchworks.format.ups import UPSParser
 
 
-class BPS(UPS):
+class BPSParser(UPSParser):
     pass
