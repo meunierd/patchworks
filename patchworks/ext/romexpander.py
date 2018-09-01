@@ -6,10 +6,10 @@ See: http://dvdtranslations.eludevisibility.org/rom_expander_pro.html
 
 import binascii
 
-from .. import util
+from patchworks import util
 
 
-class ROMExpanderParser(object):
+class ROMExpander:
 
     FILENAME = "ROM Expander Pro.txt"
 
@@ -47,9 +47,6 @@ class ROMExpanderParser(object):
 
     def readline(self):
         return self._tokenize(self.lines.pop(0))
-
-    def _leftpad(self, value):
-        return "0" * (len(value) % 2) + value
 
     def _tokenize(self, line):
         return line.strip().split('\t')
@@ -101,41 +98,20 @@ class ROMExpanderParser(object):
                 if not script["ops"]:
                     end_ptr = script["header_size"] + script["new_size"]
                 else:
-                    end_ptr = eval("0x" + script["ops"][0][1]) + script["header_size"]
+                    end_ptr = util.bytes_from_str(script["ops"][0][1]) + script["header_size"]
 
                 if cmd == "COPY":
-                    copy(eval("0x" + op[1]),  # Source
-                         eval("0x" + op[0]))  # Target
+                    copy(util.bytes_from_str(op[1]),  # Source
+                         util.bytes_from_str(op[0]))  # Target
 
                 elif cmd == "FILL":
-                    fill(eval("0x" + op[0]),  # Destination
+                    fill(util.bytes_from_str(op[0]),  # Destination
                          util.bytes_from_str(op[1]))  # Value
                 else:
                     raise Exception
 
             # REPLACE
             for patch in script["patches"]:
-                offset = eval("0x" + patch.pop(0))
-                data = "".join(["0" * (2 - len(x)) + x for x in patch])
+                offset, data = map(util.bytes_from_str, patch)
                 t.seek(offset + script['header_size'])
                 t.write(util.bytes_from_str(data))
-
-
-class ROMExpanderRecord(object):
-
-    pass
-
-
-class CopyRecord(ROMExpanderRecord):
-
-    pass
-
-
-class FillRecord(ROMExpanderRecord):
-
-    pass
-
-
-class ReplaceRecord(ROMExpanderRecord):
-
-    pass

@@ -2,9 +2,13 @@ class ValidationError(Exception):
     pass
 
 
-class InvalidSourceError(ValidationError):
+class InvalidChecksum(ValidationError):
     pass
 
 
-class InvalidModifiedError(ValidationError):
+class InvalidSourceError(InvalidChecksum):
+    pass
+
+
+class InvalidModifiedError(InvalidChecksum):
     pass

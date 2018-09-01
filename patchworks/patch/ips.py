@@ -1,5 +1,8 @@
-from .base import Parser
-from .. import util
+from pathlib import Path
+
+from patchworks import util
+from patchworks.ext import ROMExpander
+from .base import Parser, Applicator
 
 
 class IPSParser(Parser):
@@ -7,12 +10,15 @@ class IPSParser(Parser):
     EXTENSION = 'ips'
     MAGIC = b'PATCH'
 
-    def __init__(self, file, romexpander=None):
-        super().__init__(file)
-        self.romexpander = romexpander
+    def __init__(self, fp):
+        self.fp = fp
+
+    def romexpander_path(self):
+        path = Path(self.fp).with_name(ROMExpander.FILENAME)
+        self.romexpander = ROMExpander(path) if path.exists() else None
 
     def parse_int(self, size):
-        return util.int_from_bytes(self.read(size), 'big')
+        return util.int_from_bytes(self.fp.read(size), 'big')
 
     def parse_records(self):
         OFFSET_SIZE = 3
@@ -41,3 +47,11 @@ class IPSRecord(object):
     def apply(self, fp):
         fp.seek(self.offset)
         fp.write(self.data)
+
+
+class IPSApplicator(Applicator):
+
+    Parser = IPSParser
+
+    def apply(self):
+        pass

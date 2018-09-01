@@ -2,11 +2,11 @@ import binascii
 
 from datetime import datetime
 
-from .base import Parser, Record, Applicator
-from .. import util
+from patchworks.patch.base import Patch
+from patchworks import util
 
 
-class Ninja2Parser(Parser):
+class Ninja2(Patch):
 
     EXTENSION = 'rup'
     MAGIC = b'NINJA2'
@@ -76,10 +76,12 @@ class Ninja2Parser(Parser):
         return self.read(filename_size) if filename_size else None
 
     def parse_int(self):
-        return util.int_from_bytes(self.read(util.int_from_bytes(self.read(1))))
+        return util.int_from_bytes(
+            self.read(util.int_from_bytes(self.read(1)))
+        )
 
     def format_description(self):
-        self.metadata['description'] = self.metadata['description'].replace('\\n', '\n')
+        self.metadata['description'] = self.metadata['description'].decode('string_escape')
 
     def format_date(self):
         date = self.metadata['date']
@@ -87,7 +89,7 @@ class Ninja2Parser(Parser):
             self.metadata['date'] = datetime.strptime(date, "%Y%m%d").date()
 
 
-class Ninja2Record(Record):
+class Ninja2Record(object):
 
     def __init__(self, offset, data):
         self.offset = offset
@@ -98,8 +100,3 @@ class Ninja2Record(Record):
         source_data = fp.read(len(self.data))
         fp.seek(self.offset)
         fp.write(source_data ^ self.data)
-
-
-class Ninja2Applicator(Applicator):
-
-    Parser = Ninja2Parser
